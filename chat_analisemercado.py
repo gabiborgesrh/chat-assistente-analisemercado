@@ -1,55 +1,33 @@
-import streamlit as st
 import openai
-import os
-from dotenv import load_dotenv
+import streamlit as st
 
-load_dotenv()
+# Configuração da chave da API do OpenAI
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-assistant_id = os.getenv("OPENAI_ASSISTANT_ID")
-
-st.set_page_config(page_title="Assistente de Análise de Mercado", layout="wide")
-st.title("💬 Chat com sua Assistente de Análise de Mercado")
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-prompt = st.chat_input("Envie sua análise, pedido de currículo, texto do LinkedIn...")
-
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    with st.chat_message("assistant"):
-        msg_placeholder = st.empty()
-        msg_placeholder.markdown("⌛ Pensando...")
-
-        thread = openai.beta.threads.create()
-        openai.beta.threads.messages.create(
-            thread_id=thread.id,
-            role="user",
-            content=prompt
+# Função para gerar resposta usando o modelo GPT-3.5 ou GPT-4
+def get_assistant_response(user_input):
+    try:
+        # Enviando a mensagem do usuário para a API do OpenAI
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # ou "gpt-4", dependendo do seu plano
+            messages=[
+                {"role": "system", "content": "Você é um assistente útil."},
+                {"role": "user", "content": user_input}
+            ]
         )
-        run = openai.beta.threads.runs.create(
-            thread_id=thread.id,
-            assistant_id=assistant_id
-        )
+        # Extraindo a resposta do modelo
+        assistant_message = response['choices'][0]['message']['content']
+        return assistant_message
+    except Exception as e:
+        return f"Erro ao obter resposta: {e}"
 
-        while True:
-            run_status = openai.beta.threads.runs.retrieve(
-                thread_id=thread.id,
-                run_id=run.id
-            )
-            if run_status.status == "completed":
-                break
+# Interface do Streamlit
+st.title("Chat Assistente - Análise de Mercado e Carreira")
 
-        messages = openai.beta.threads.messages.list(thread_id=thread.id)
-        reply = messages.data[0].content[0].text.value
+# Caixa de entrada de texto para o usuário
+user_input = st.text_input("Envie sua pergunta ou análise:")
 
-        msg_placeholder.markdown(reply)
-        st.session_state.messages.append({"role": "assistant", "content": reply})
+# Se o usuário enviar uma pergunta
+if user_input:
+    response = get_assistant_response(user_input)
+    st.write("Assistente:", response)
