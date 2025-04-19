@@ -1,33 +1,32 @@
 import openai
 import streamlit as st
 
-# Configuração da chave da API do OpenAI
+# Configuração da chave de API
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-# Função para gerar resposta usando o modelo GPT-3.5 ou GPT-4
-def get_assistant_response(user_input):
+# Função para obter resposta do modelo GPT
+def obter_resposta(prompt):
     try:
-        # Enviando a mensagem do usuário para a API do OpenAI
+        # Chamada para o modelo GPT
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # ou "gpt-4", dependendo do seu plano
+            model="gpt-4",  # ou "gpt-3.5-turbo" se preferir outro modelo
             messages=[
                 {"role": "system", "content": "Você é um assistente útil."},
-                {"role": "user", "content": user_input}
+                {"role": "user", "content": prompt}
             ]
         )
-        # Extraindo a resposta do modelo
-        assistant_message = response['choices'][0]['message']['content']
-        return assistant_message
+        return response.choices[0].message['content']
     except Exception as e:
-        return f"Erro ao obter resposta: {e}"
+        st.error(f"Ocorreu um erro: {e}")
+        return None
 
 # Interface do Streamlit
-st.title("Chat Assistente - Análise de Mercado e Carreira")
+st.title("Chat Assistente de Análise de Mercado")
 
-# Caixa de entrada de texto para o usuário
-user_input = st.text_input("Envie sua pergunta ou análise:")
+# Solicitar entrada do usuário
+user_input = st.text_input("Digite seu prompt:")
 
-# Se o usuário enviar uma pergunta
 if user_input:
-    response = get_assistant_response(user_input)
-    st.write("Assistente:", response)
+    resposta = obter_resposta(user_input)
+    if resposta:
+        st.write("Resposta do Assistente:", resposta)
